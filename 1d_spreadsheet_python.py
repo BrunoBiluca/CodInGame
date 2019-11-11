@@ -1,31 +1,3 @@
-
-Skip to content
-Pull requests
-Issues
-Marketplace
-Explore
-@BrunoBiluca
-
-1
-0
-
-    0
-
-BrunoBiluca/CodInGame
-Code
-Issues 0
-Pull requests 0
-Projects 0
-Wiki
-Security
-Insights
-Settings
-CodInGame/1d_spreadsheet.py /
-@BrunoBiluca BrunoBiluca Versão inicial b57a7d4 37 seconds ago
-70 lines (49 sloc) 1.41 KB
-You're using jump to definition to discover and navigate code.
-Beta
-Learn more or give us feedback
 import sys
 import math
 
@@ -95,18 +67,4 @@ for key, value in spreadsheet.items():
             print(result)
     else:
         print(value)
-
-    © 2019 GitHub, Inc.
-    Terms
-    Privacy
-    Security
-    Status
-    Help
-
-    Contact GitHub
-    Pricing
-    API
-    Training
-    Blog
-    About
 
