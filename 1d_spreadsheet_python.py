@@ -5,16 +5,18 @@ n = int(input())
 
 spreadsheet = {}
 
-def evaluation(operation, arg_1, arg_2):
-    return {
-        "VALUE": arg_1,
-        "ADD": arg_1 + arg_2,
-        "SUB": arg_1 - arg_2,
-        "MULT": arg_1 * arg_2
-    }.get(operation)
-    
+def execute_operation(operation, arg_1, arg_2):
+    try:
+        return {
+            "VALUE": arg_1,
+            "ADD": arg_1 + arg_2,
+            "SUB": arg_1 - arg_2,
+            "MULT": arg_1 * arg_2
+        }.get(operation)
+    except TypeError:
+        print("error", operation, arg_1, arg_2)
 
-def check(arg):
+def check_argument(arg):
     if isinstance(arg, int):
         return arg
     
@@ -31,40 +33,38 @@ def check(arg):
         return spreadsheet[arg]
     else:
         return arg
+        
+        
+def calculate_operation(key, value):
+    if not isinstance(value, tuple):
+        return value
+
+    arg_1 = check_argument(value[1])
+    if isinstance(arg_1, str) and arg_1.startswith("$"):
+        arg_1 = calculate_operation(arg_1, spreadsheet[arg_1])
+    
+    arg_2 = check_argument(value[2])
+    if isinstance(arg_2, str) and arg_2.startswith("$"):
+        arg_2 = calculate_operation(arg_2, spreadsheet[arg_2])
+    
+    # Garanto que aqui tenho valores inteiros para fazer a operação
+    spreadsheet[key] = execute_operation(value[0], arg_1, arg_2)
+    return spreadsheet[key]
+    
 
 for i in range(n):
     operation, arg_1, arg_2 = input().split()
 
-    # print(operation)
-    
-    arg_1 = check(arg_1)
-    arg_2 = check(arg_2)
+    arg_1 = check_argument(arg_1)
+    arg_2 = check_argument(arg_2)
     
     if isinstance(arg_1, int) and isinstance(arg_2, int):
-        value = evaluation(operation, arg_1, arg_2)
+        value = execute_operation(operation, arg_1, arg_2)
     else:
         value = (operation, arg_1, arg_2)
         
     spreadsheet.update({f"${str(i)}": value})
-    
-    # print(spreadsheet)
 
-    # print(value)
-    
+# Print results   
 for key, value in spreadsheet.items():
-    # print(value)
-    if isinstance(value, tuple):
-        arg_1 = check(value[1])
-        arg_2 = check(value[2])
-        
-        # print(arg_1)
-        # print(arg_2)
-
-        if isinstance(arg_1, int) and isinstance(arg_2, int):
-            result = evaluation(value[0], arg_1, arg_2)
-            spreadsheet[key] = result
-            
-            print(result)
-    else:
-        print(value)
-
+    print(calculate_operation(key, value))
