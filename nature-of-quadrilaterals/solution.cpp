@@ -1,49 +1,123 @@
 #include <algorithm>
 #include <iostream>
+#include <math.h>
 #include <string>
 #include <vector>
 
 using namespace std;
 
-class IVector2 {
+class Vector2 {
 public:
   string name;
-  int x;
-  int y;
+  float x;
+  float y;
+
+  Vector2() {
+    this->x = 0;
+    this->y = 0;
+  }
+
+  Vector2(string name, float x, float y) {
+    this->name = name;
+    this->x = x;
+    this->y = y;
+  }
+
+  string toString() {
+    return name + " ( " + to_string(x) + " , " + to_string(y) + " ) ";
+  };
+
+  float magnitude() { return sqrt(pow(this->x, 2) + pow(this->y, 2)); }
+
+  Vector2 normalize() {
+    auto mag = this->magnitude();
+    return Vector2(this->name, this->x / mag, this->y / mag);
+  }
+};
+
+class FloatExpr {
+public:
+  static bool nearEqual(float a, float b, float delta) {
+    return b - delta <= a && a <= b + delta;
+  }
+};
+
+class Vector2Expr {
+public:
+  static float dotProduct(Vector2 a, Vector2 b) {
+    return a.x * b.x + a.y * b.y;
+  }
 };
 
 class IQuadrilateral {
 public:
-  IVector2 A;
-  IVector2 B;
-  IVector2 C;
-  IVector2 D;
-  IVector2 AB;
-  IVector2 BC;
-  IVector2 CD;
-  IVector2 DA;
-  string getSidesNames();
-  string getTypeString();
+  Vector2 A;
+  Vector2 B;
+  Vector2 C;
+  Vector2 D;
+  Vector2 AB;
+  Vector2 BC;
+  Vector2 CD;
+  Vector2 DA;
 };
 
 class IQuadrilateralTypeEvaluator {
 public:
-  string getType(IQuadrilateral q);
+  virtual string getType(IQuadrilateral q) = 0;
 };
 
 class QuadrilateralTypeEvaluator : public IQuadrilateralTypeEvaluator {
 
 private:
-  bool sidesAreParallel(const IVector2 &a, const IVector2 &b) {
-    auto dotProduct = a.x * b.x + a.y * b.y;
-    cerr << "DP: " << a.name << b.name << " = " << dotProduct << endl;
-    return dotProduct == 1 || dotProduct == -1;
+  bool areSidesParallel(Vector2 a, Vector2 b) {
+    auto result = Vector2Expr::dotProduct(a.normalize(), b.normalize());
+    return FloatExpr::nearEqual(result, 1.0f, 0.000001f) ||
+           FloatExpr::nearEqual(result, -1.0f, 0.000001f);
+  }
+
+  bool areSidesPerpendicular(Vector2 a, Vector2 b) {
+    auto result = Vector2Expr::dotProduct(a.normalize(), b.normalize());
+    return FloatExpr::nearEqual(result, 0.0f, 0.000001f);
+  }
+
+  bool areSidesEqual(IQuadrilateral q) {
+    vector<Vector2> sides;
+    sides.push_back(q.AB);
+    sides.push_back(q.BC);
+    sides.push_back(q.CD);
+    sides.push_back(q.DA);
+
+    auto magRef = sides.front().magnitude();
+    for (auto side : sides) {
+      if (side.magnitude() != magRef)
+        return false;
+    }
+    return true;
+  }
+
+  bool areAllSidesPerpendicular(IQuadrilateral q) {
+    return areSidesPerpendicular(q.AB, q.BC) &&
+           areSidesPerpendicular(q.BC, q.CD) &&
+           areSidesPerpendicular(q.CD, q.DA) &&
+           areSidesPerpendicular(q.DA, q.AB);
   }
 
 public:
   QuadrilateralTypeEvaluator() {}
   string getType(IQuadrilateral q) {
-    if (sidesAreParallel(q.AB, q.CD) && sidesAreParallel(q.BC, q.DA)) {
+    if (areSidesEqual(q) && areAllSidesPerpendicular(q)) {
+      return "square";
+    }
+
+    if (areSidesEqual(q)) {
+      return "rhombus";
+    }
+
+    if (areAllSidesPerpendicular(q)) {
+      return "rectangle";
+    }
+
+    if (areSidesParallel(q.AB, q.CD) && areSidesParallel(q.BC, q.DA)) {
       return "parallelogram";
     }
 
@@ -51,25 +125,11 @@ public:
   }
 };
 
-class Vector2 : public IVector2 {
-public:
-  Vector2() {
-    this->x = 0;
-    this->y = 0;
-  }
-
-  Vector2(string name, int x, int y) {
-    this->name = name;
-    this->x = x;
-    this->y = y;
-  }
-};
-
 class Quadrilateral : public IQuadrilateral {
 private:
   string type;
 
-  Vector2 createVector(const IVector2 &a, const IVector2 &b) {
+  Vector2 createVector(const Vector2 &a, const Vector2 &b) {
     return Vector2(a.name + b.name, a.x - b.x, a.y - b.y);
   }
 
@@ -85,8 +145,7 @@ public:
     this->CD = createVector(this->C, this->D);
     this->DA = createVector(this->D, this->A);
 
-    QuadrilateralTypeEvaluator eval;
-    this->type = eval.getType(*this);
+    this->type = QuadrilateralTypeEvaluator().getType(*this);
   }
 
   string getSidesNames() {
@@ -123,8 +182,7 @@ int main() {
     Vector2 B(b, x_b, y_b);
     Vector2 C(c, x_c, y_c);
     Vector2 D(d, x_d, y_d);
-    Quadrilateral newQuadrilateral(A, B, C, D);
-    quadrilaterals.push_back(newQuadrilateral);
+    quadrilaterals.push_back(Quadrilateral(A, B, C, D));
   }
 
   for (auto &quadrilateral : quadrilaterals) {
